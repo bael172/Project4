@@ -19,7 +19,10 @@ const Prepod = sequelize.define('prepod',{
 
 const Predmet = sequelize.define('predmet',{
     id_predmeta:{type:DataTypes.INTEGER, autoIncrement:true, primaryKey:true},
-    predmet:{type:DataTypes.STRING, allowNull:false, unique:true}
+    predmet:{type:DataTypes.STRING, allowNull:false, unique:true},
+    profile:{type:DataTypes.STRING},
+    course_start:{type:DataTypes.INTEGER},
+    course_end:{type:DataTypes.INTEGER}
 })
 
 const Para = sequelize.define('para',{

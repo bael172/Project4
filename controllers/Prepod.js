@@ -7,104 +7,132 @@ class Queries{
             const {id_prepoda, surname, name, doljnost, osr, srps,
             obrazovanie, vuz, name_of_vuz, spec_diploma, prof_diploma,
             science_exp, quality} = req.body
-            const found = await Prepod.findOne({
-                where:{
-                    surname: surname,
-                    name: name,
-                    doljnost: doljnost,
-                    osr:osr
-                }
+            const found = await Prepod.findAll({
+                    where:{
+                        [Op.and]:[
+                        {surname: surname},
+                        {name: name},
+                        {doljnost: doljnost},
+                        {osr:osr}
+                        ]
+                    }
             })
-            if(!found){
-                const created=await Prepod.create({
-                    id_prepoda, surname, name, 
-                    doljnost, osr, srps, 
-                    obrazovanie, vuz, name_of_vuz, spec_diploma,
-                    prof_diploma, science_exp, quality
-                })
-                res.send(created)
+            console.log(found)
+            if(found.length==0){
+                try{
+                    const created=await Prepod.create({
+                        id_prepoda, surname, name, 
+                        doljnost, osr, srps, 
+                        obrazovanie, vuz, name_of_vuz, spec_diploma,
+                        prof_diploma, science_exp, quality
+                    })
+                    res.send(created)
+                }
+                catch(e){
+                    return next(ApiError.internal("Не удалось создать запись"))
+                }
             }
-            else return res.send("Данная запись уже существует")
+            else return next(ApiError.badRequest("Данная запись уже существует"))
             //return next(ApiError.internal("ошибка"))
         
     }
     async edit(req,res,next){
         const {surname,name,doljnost,osr,srps,obrazovanie,vuz,name_of_vuz,
         spec_diploma,prof_diploma,science_exp,quality} = req.body
-        const check1 = await Prepod.findAll({
+        const found = await Prepod.findAll({
                 where: {
                     id_prepoda:req.params.id
                 }
             })
-            //console.log("check1=array?",Array.isArray(check1))
-            //console.log("check1.length = ",check1.length)
-            //console.log("check1=",check1)
-        //try{
-            if(check1.length!==0){
-                    const upd = await Prepod.update({
-                        surname, name, doljnost, osr, srps, 
+            const found_id= found[0].dataValues.id_prepoda
+            if(Object.keys(found[0]).length!==0){
+                //try{
+                    const upd = await Prepod.update(
+                        {surname, name, doljnost, osr, srps, 
                         obrazovanie, vuz,name_of_vuz,
-                        spec_diploma, prof_diploma, science_exp, quality,
-                        where:{
-                                id_prepoda:req.params.id
+                        spec_diploma, prof_diploma, science_exp, quality},
+                        {
+                            where:{
+                                id_prepoda:found_id
                             }
                         })
-                    res.json("Запись обновлена",upd)
-                }
-                else res.send(`Запись с id=${req.params.id} не найдена`)
-            //}
-        //catch(e){
-        //    return next(ApiError.internal("ошибка"))
-        //}
+                        res.send(upd)
+                        //if(upd=="1") res.write("Запись обновлена")
+                        //else res.end()
+                //}
+                //catch(e){
+                    //return next(ApiError.internal("ошибка"))
+                //}
+            }
+                else next(ApiError.badRequest(`Запись с id=${req.params.id} не найдена`))
     }
-    async del(req,res,next){
-            const check1 = await Prepod.findAll({
+    async del_by_id(req,res,next){
+            const found = await Prepod.findAll({
                 where: {
                     id_prepoda:req.params.id
                 }
             })
-            console.log("check1 is array?",Array.isArray(check1))
-            console.log("check1.length = ",check1.length)
-            const check1_id = check1.dataValues.id_prepoda
-        try{
-            if(check1.length!==0){
-                    Prepod.destroy({
+            console.log("Is found an array?",Array.isArray(found))
+            console.log("found.length = ",found.length)
+            console.log(found)
+            const found_id = check1[0].dataValues.id_prepoda
+
+            if(Object.keys(found).length!==0){
+                try{
+                    const del = await Prepod.destroy({
                         where:{
-                            id:check1_id
+                            id_prepoda:found_id
                             }
                         })
-                    res.send(`Запись с id = ${check1_id} стёрта нахуй`)
+                    del.then(value=>{
+                        res.write(value)
+                        if(value==='fulfilled') res.write(`Запись с id = ${found_id} стёрта`)
+                        res.end()
+                    })
                 }
-                else res.send(`Запись с id=${req.params.id} не найдена`)
+                catch(e){
+                    return next(ApiError.internal("Не удалось удалить запись"))
+                }
             }
+            else res.send(`Запись с id=${req.params.id} не найдена`)
+    }
+    async del_all(req,res,next){
+        try{
+            const del = await Prepod.destroy({
+                truncate:true
+            })
+            del.then(value=>{
+                res.write(value)
+                if(value=="fulfilled") res.write("Таблица Пары опустошена")
+                res.end()
+            })
+        }
         catch(e){
-            return ApiError(internal,"ошибка")
+            return next(ApiError.internal("Не удалось опустошить таблицу"))
         }
     }
     async get_by_id(req,res,next){
-        const found = await Prepod.findAll({
-            where:{
-                id_prepoda : req.params.id
-            }
-        })
-        if(found.length!==0){
-            res.json(found)
+        try{
+            const got = await Prepod.findOne({
+                where:{id_pary : req.params.id}
+            })
+            if(Object.keys(got)!==0) res.send(got)
+            else res.send(`Нет записи с id=${req.params.id}`)
         }
-        else res.send("Ничего не найдено")
+        catch(e){
+            return next(ApiError.internal("Не удалось вернуть записи"))
+        }
     }
     async get_all(req,res,next){
-        const found = await Prepod.findAll()
-        return res.json(found)
+        try{
+            const got = await Prepod.findAll({})
+            res.send(got)
+        }
+        catch(e){
+            return next(ApiError.internal("Ошибка"))
+        }
     }
-    async del_all(req,res,next){
-        const found = await Prepod.findAll()
-        await Prepod.destroy({
-            truncate:true
-        })
-        const msg = new Map()
-        msg.set(null,"Таблица опустошена")
-        return res.json("Таблица опустошена:"+found)
-    }
+
 }
 
 module.exports = new Queries()
