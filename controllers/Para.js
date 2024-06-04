@@ -1,30 +1,33 @@
-const {Para} = require('../db/modals')
+const {Para,Prepod,Predmet} = require('../db/modals')
 const ApiError = require('../apiError')
 const {Op} = require("sequelize")
 
 class Queries{
-    async add(req,res,next){
+    async fillForeignKey(req,res,next){
         const {id_predmeta,id_prepoda} = req.body
         const found = await Para.findAll({
             where:{
                 [Op.and]:[
-                    {prepodIdPrepoda : id_prepoda},
-                    {predmetIdPredmeta : id_predmeta}
+                    {id_prepoda : id_prepoda},
+                    {id_predmeta : id_predmeta}
                 ]
             }
         })
         if(found.length==0){
-            try{
-                const create = await Para.create({
-                    id_predmeta, id_prepoda
+            //try{
+                const prepod = await Prepod.findByPk(req.body.id_prepoda)
+                const predmet = await Predmet.findByPk(req.body.id_predmeta)
+
+                const para = await Para.create({
+                    id_prepoda, id_predmeta
                 })
-                res.send(create)
-            }
-            catch(e){
-                return next(ApiError.internal("Не удалось создать запись"))
-            }
+                res.json({message:"Запись успешна добавлена!"})
+            //}
+            //catch(e){
+                //return next(ApiError.internal("Не удалось создать запись"))
+            //}
         }
-        else return next(ApiError.badRequest(("Повторное введение записи")))
+        else return next(ApiError.badRequest(("Такая запись уже есть")))
     }
     async edit(req,res,next){
         const {id_predmeta, id_prepoda} = req.body
@@ -60,19 +63,17 @@ class Queries{
                 id_pary : req.params.id
             }
         })
-        const found_id = found[0].dataValues.id_pary
-        if(Object.keys(found[0]).length!==0){
+        res.write(found)
+        if(found){
             try{
                 const del = await Para.destroy({
                     where:{
-                        id_pary : found_id
+                        id_pary : req.params.id
                     }
                 })
-                del.then(value=>{
-                    res.write(value)
-                    if(value=="fulfilled")res.write("\nЗапись удалена")
-                    res.end()
-                })
+                if(del[0]>0) res.write(`Удалено ${del[0]} записи`)
+                else res.write("Записей для удаления не найдено")
+                res.end()
             }
             catch(e){
                 return next(ApiError.internal("Не удалось удалить запись"))
@@ -85,11 +86,8 @@ class Queries{
             const del = await Para.destroy({
                 truncate:true
             })
-            del.then(value=>{
-                res.write(value)
-                if(value=="fulfilled") res.write("Таблица Пары опустошена")
-                res.end()
-            })
+            if(parseInt(del[0])>0) res.json({message:`Удалено ${del[0]} записей`})
+            else res.json({message:"Записи не удалены"})
         }
         catch(e){
             return next(ApiError.internal("Не удалось опустошить таблицу"))
@@ -100,9 +98,8 @@ class Queries{
             const got = await Para.findOne({
                 where:{id_pary : req.params.id}
             })
-            if(Object.keys(got)!==0) res.send(got)
+            if(got) res.send(got)
             else res.send(`Нет записи с id=${req.params.id}`)
-            
         }
         catch(e){
             return next(ApiError.internal("Не удалось вернуть записи"))

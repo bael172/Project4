@@ -27,15 +27,15 @@ const Predmet = sequelize.define('predmet',{
 
 const Para = sequelize.define('para',{
     id_pary:{type:DataTypes.INTEGER, autoIncrement:true, primaryKey:true},
-    //id_predmet:{type:DataTypes.INTEGER, allowNull:false},
-    //id_prepoda:{type:DataTypes.INTEGER, allowNull:false},
+    id_predmet:{type:DataTypes.INTEGER, allowNull:false, references: { model:Predmet, key:'id_predmeta'}},
+    id_prepoda:{type:DataTypes.INTEGER, allowNull:false, references: { model:Prepod, key:'id_prepoda'}}
 })
 
 const Raspisaniye = sequelize.define('raspisaniye',{
     date:{type:DataTypes.DATEONLY, primaryKey:true},
     group:{type:DataTypes.STRING, primaryKey:true},
     nomer_pary:{type:DataTypes.INTEGER, primaryKey:true},
-    //id_pary:{type:DataTypes.INTEGER, allowNull:false},
+    id_pary:{type:DataTypes.INTEGER, allowNull:false, references:{model:Para, key:'id_pary'}},
     auditory:{type:DataTypes.STRING},
 })
 

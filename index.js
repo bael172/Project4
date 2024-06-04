@@ -24,14 +24,18 @@ app.get('/msg',(req,res)=>{
 async function start(){
     try{
         await sequelize.authenticate()
-        await sequelize.sync()
+        await sequelize.sync({force:false})
         app.listen(port, ()=>{
             console.log(`Server starts on ${port} port`)
         })
     }
     catch(e){
-        console.error('Unable to connect to the database',error)
+        console.error('Unable to connect to the database')
     }
 }
 start()
-
+      /*  let promise = new Promise(function(resolve,reject){
+            console.log(found)
+            setTimeout(()=>resolve("done"),1000)
+        })
+        */

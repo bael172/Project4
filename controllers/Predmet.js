@@ -10,17 +10,12 @@ class Queries{
                 predmet : predmet
             }
         })
-      /*  let promise = new Promise(function(resolve,reject){
-            console.log(found)
-            setTimeout(()=>resolve("done"),1000)
-        })
-        */
         if(found.length==0){
             try{
-                const add = Predmet.create({
+                const add = await Predmet.create({
                     predmet, profile, course_start, course_end
                 })
-                res.send("Добавлена запись в таблицу Предмет")
+                res.send(add)
             }
             catch(e){
                 return next(ApiError.badRequest("Не удалось создать запись"))
@@ -30,30 +25,27 @@ class Queries{
     }
     async edit(req,res,next){
         const {predmet,profile,course} = req.body
-        const found = await Predmet.findAll({where:{id_predmeta : req.params.id}})
-        
-        console.log("Is Array?",Array.isArray(found))
-        console.log("Array length?",found.length)
-        console.log(found[0].dataValues.id_predmeta)
-
-        const found_id = found[0].dataValues.id_predmeta
-        if(Object.keys(found[0])!==0){
-            try{
-                await Predmet.update(
-                    {predmet,profile,course},{
-                        where:{id_predmeta : found_id}
-                    }
-                )
-                const upd = await Predmet.findOne({
-                    where:{id_predmeta:found_id}
-                })
-                res.send(upd)
+        const found = await Predmet.findAll({where:{id_predmeta : req.params.id}}) 
+            if(!found){
+                try{
+                    await Predmet.update(
+                        {predmet,profile,course},{
+                            where:{id_predmeta : req.params.id}
+                        }
+                    )
+                    const upd = await Predmet.findOne({
+                        where:{id_predmeta:found_id}
+                    })
+                    res.write(upd)
+                    if(upd[0]>0) res.write(`Обновлено ${upd[0]}`)
+                    else res.write("Запись не найдена для обновления")
+                    res.end()
+                }
+                catch(e){
+                    return next(ApiError.internal('Не удалось обновить запись'))
+                }
             }
-            catch(e){
-                return next(ApiError.internal('Не удалось обновить запись'))
-            }
-        }
-        else return next(ApiError.badRequest(`Запись с id=${req.params.id} не найдено`))
+            else next(ApiError.badRequest(`Запись с id=${req.params.id} не найдена`))
     }
     async del_by_id(req,res,next){
         const found = await Predmet.findAll({
